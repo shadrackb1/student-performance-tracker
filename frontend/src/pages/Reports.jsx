@@ -105,10 +105,10 @@ export default function Reports() {
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button className="btn border border-slate-300 text-slate-700 hover:bg-slate-50" onClick={downloadRanking} disabled={downloading === 'rank'}>
-                {downloading === 'rank' ? '⏳' : '📥'} Class Ranking (XLSX)
+                {downloading === 'rank' ? '⏳' : '📥'} Class Ranking (Excel/CSV)
               </button>
               <button className="btn border border-slate-300 text-slate-700 hover:bg-slate-50" onClick={downloadSubjectAnalysis} disabled={downloading === 'subj'}>
-                {downloading === 'subj' ? '⏳' : '📥'} Subject Analysis (XLSX)
+                {downloading === 'subj' ? '⏳' : '📥'} Subject Analysis (Excel/CSV)
               </button>
             </div>
           </div>
@@ -123,7 +123,7 @@ export default function Reports() {
               <p className="text-slate-600">{report.student.admission_no} • {report.student.class_name} • {report.term} {report.year}</p>
             </div>
             <button className="btn btn-primary" onClick={downloadPdf} disabled={downloading === 'pdf'}>
-              {downloading === 'pdf' ? '⏳' : '📥'} Download PDF
+              {downloading === 'pdf' ? '⏳' : '📥'} Download Report Card
             </button>
           </div>
 

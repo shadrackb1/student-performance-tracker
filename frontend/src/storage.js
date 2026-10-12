@@ -101,6 +101,57 @@ export function importStudents(records) {
   return { inserted, updated, total: records.length };
 }
 
+// Import students AND their marks from a CSV with subject columns
+export function importStudentsWithMarks(records, term, year) {
+  const subjects = read(KEYS.subjects, []);
+  const list = read(KEYS.students, []);
+  const marks = read(KEYS.marks, []);
+  let studentsInserted = 0, studentsUpdated = 0, marksSaved = 0;
+
+  // Identify subject columns (anything that matches a known subject name)
+  const subjectNames = subjects.map(s => s.name);
+
+  for (const r of records) {
+    if (!r.admission_no || !r.name || !r.class_name) continue;
+
+    // Upsert student
+    let student = list.find(s => s.admission_no === r.admission_no);
+    if (student) {
+      student.name = r.name;
+      student.class_name = r.class_name;
+      studentsUpdated++;
+    } else {
+      const id = Math.max(0, ...list.map(s => s.id)) + 1;
+      student = { id, admission_no: r.admission_no, name: r.name, class_name: r.class_name, created_at: new Date().toISOString() };
+      list.push(student);
+      studentsInserted++;
+    }
+
+    // Import marks from subject columns
+    for (const [colName, value] of Object.entries(r)) {
+      if (subjectNames.includes(colName) && value !== '' && value != null) {
+        const score = parseFloat(value);
+        if (isNaN(score) || score < 0 || score > 100) continue;
+        const subject = subjects.find(s => s.name === colName);
+        if (!subject) continue;
+        const idx = marks.findIndex(m =>
+          m.student_id === student.id && m.subject_id === subject.id &&
+          m.term === term && m.year === year);
+        if (idx >= 0) marks[idx].score = score;
+        else {
+          const id = Math.max(0, ...marks.map(m => m.id)) + 1;
+          marks.push({ id, student_id: student.id, subject_id: subject.id, score, term, year });
+        }
+        marksSaved++;
+      }
+    }
+  }
+
+  write(KEYS.students, list);
+  write(KEYS.marks, marks);
+  return { studentsInserted, studentsUpdated, marksSaved, total: records.length };
+}
+
 // ---------- subjects ----------
 export function getSubjects() {
   return read(KEYS.subjects, []);
@@ -285,4 +336,90 @@ export function computeReportCard(studentId, marks) {
     class_size: allRankings.length,
     passed: avg >= 55,
   };
+}
+
+// ---------- client-side exports ----------
+export function toCsv(headers, rows) {
+  const esc = v => {
+    const s = String(v ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [headers.map(esc).join(',')];
+  for (const row of rows) lines.push(row.map(esc).join(','));
+  return lines.join('\n');
+}
+
+export function downloadCsv(csv, filename) {
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function exportRankingsCsv(className, term, year) {
+  const marks = getMarks(className, term, year);
+  const rankings = computeRankings(marks);
+  const headers = ['Rank','Admission No','Name','Class','Average','Mean Grade','Points','Subjects','Pass Rate %'];
+  const rows = rankings.map(r => [r.rank, r.admission_no, r.name, r.class_name, r.average, r.mean_grade, r.total_points, r.subjects, r.pass_rate]);
+  downloadCsv(toCsv(headers, rows), `class-ranking-${className}-${term}-${year}.csv`);
+}
+
+export function exportSubjectAnalysisCsv(term, year, className) {
+  const marks = getMarks(className || null, term, year);
+  const summary = computeSubjectSummary(marks);
+  const headers = ['Subject','Code','Average','Grade','Highest','Lowest','Entries','Pass Rate %'];
+  const rows = summary.map(s => [s.subject, s.code, s.avg, s.grade, s.highest, s.lowest, s.entries, s.pass_rate]);
+  downloadCsv(toCsv(headers, rows), `subject-analysis-${term}-${year}.csv`);
+}
+
+// Open a printable report card in a new window (save as PDF via browser print)
+export function printReportCard(student, report, term, year) {
+  const rows = report.subjects.map(s =>
+    `<tr><td style="padding:6px 12px;border-bottom:1px solid #e2e8f0">${s.subject}</td><td style="padding:6px 12px;border-bottom:1px solid #e2e8f0;text-align:center;font-family:monospace">${s.code}</td><td style="padding:6px 12px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:700">${s.score}</td><td style="padding:6px 12px;border-bottom:1px solid #e2e8f0;text-align:center"><span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:10px;font-size:12px">${s.grade}</span></td><td style="padding:6px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${s.points}</td></tr>`
+  ).join('');
+
+  const html = `<!DOCTYPE html><html><head><title>Report Card - ${student.name}</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:40px;color:#1e293b}
+    h1{text-align:center;font-size:22px;margin-bottom:4px}
+    h2{text-align:center;font-size:14px;font-weight:400;color:#64748b;margin-top:0}
+    .info{display:flex;justify-content:space-between;margin:20px 0;padding:12px;background:#f8fafc;border-radius:8px}
+    .info div{font-size:14px}
+    .info span{font-weight:700}
+    table{width:100%;border-collapse:collapse;margin:16px 0}
+    th{background:#1d4ed8;color:white;padding:8px 12px;text-align:left;font-size:13px}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+    .summary-card{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;text-align:center}
+    .summary-card .label{font-size:11px;color:#64748b;text-transform:uppercase}
+    .summary-card .value{font-size:20px;font-weight:700;margin-top:4px}
+    .pass{color:#059669}.fail{color:#dc2626}
+    .footer{margin-top:30px;font-size:12px;color:#64748b}
+    @media print{body{margin:20px}}
+  </style></head><body>
+  <h1>Chokur System — Report Card</h1>
+  <h2>${term} ${year}</h2>
+  <div class="info">
+    <div>Name: <span>${student.name}</span></div>
+    <div>Admission No: <span>${student.admission_no}</span></div>
+    <div>Class: <span>${student.class_name}</span></div>
+  </div>
+  <table>
+    <thead><tr><th>Subject</th><th>Code</th><th>Mark</th><th>Grade</th><th>Points</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="summary">
+    <div class="summary-card"><div class="label">Aggregate Points</div><div class="value">${report.total_points}</div></div>
+    <div class="summary-card"><div class="label">Average</div><div class="value">${report.average}%</div></div>
+    <div class="summary-card"><div class="label">Mean Grade</div><div class="value">${report.mean_grade}</div></div>
+    <div class="summary-card"><div class="label">Class Rank</div><div class="value">${report.rank}/${report.class_size}</div></div>
+  </div>
+  <p style="font-size:14px"><strong>Status:</strong> <span class="${report.passed ? 'pass' : 'fail'}">${report.passed ? 'PASS (C+ and above)' : 'BELOW C+'}</span></p>
+  <div class="footer">Teacher's remarks: ____________________________ &nbsp;&nbsp; Signature: ______________ &nbsp;&nbsp; Date: __________</div>
+  <script>window.onload = function(){ window.print(); }</script>
+  </body></html>`;
+
+  const win = window.open('', '_blank', 'width=800,height=600');
+  win.document.write(html);
+  win.document.close();
 }

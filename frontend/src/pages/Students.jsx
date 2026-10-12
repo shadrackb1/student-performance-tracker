@@ -47,8 +47,15 @@ export default function Students() {
     if (!importFile) return;
     setImporting(true);
     try {
-      const res = await api.students.import(importFile);
-      alert(`Imported: ${res.inserted}, Updated: ${res.updated}`);
+      const res = await api.students.import(importFile, 'Term 1', 2025);
+      const parts = [];
+      if (res.studentsInserted != null) {
+        parts.push(`Students: ${res.studentsInserted} added, ${res.studentsUpdated} updated`);
+        if (res.marksSaved) parts.push(`Marks: ${res.marksSaved} saved`);
+      } else {
+        parts.push(`Imported: ${res.inserted}, Updated: ${res.updated}`);
+      }
+      alert(parts.join(' | '));
       setImportFile(null);
       load();
     } catch (e) { alert(e.message); }
