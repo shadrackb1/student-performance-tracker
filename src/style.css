@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .bg-white { background: #fff; }
+  .text-gray-700 { color: #1e293b; }
+  .text-gray-600 { color: #475569; }
+  .text-gray-400 { color: #94a3b8; }
+  .bg-gray-50 { background: #f8fafc; }
+  .bg-gray-800 { background: #1e293b; }
+  .border-b { border-bottom-width: 1px; }
+  .text-2xl { font-size: 1.875rem; line-height: 2.25rem; }
+  .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+  .font-bold { font-weight: 700; }
+  .hover\:bg-primary:hover { background-color: #2563eb; }
+}

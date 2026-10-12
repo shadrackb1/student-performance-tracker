@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Performance Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="bg-white border-b border-gray-200">
+    <div class="container mx-auto flex items-center justify-between px-4 py-3">
+      <a href="#" class="text-2xl font-semibold">Student Performance Tracker</a>
+      <nav class="hidden md:block">
+        <ul class="flex gap-6">
+          <li><a href="#features" class="text-gray-700 hover:text-primary">Features</a></li>
+          <li><a href="#dashboard" class="text-gray-700 hover:text-primary">Dashboard</a></li>
+          <li><a href="#reports" class="text-gray-700 hover:text-primary">Reports</a></li>
+        </ul>
+      </nav>
+      <a href="#signup" class="btn btn-primary">Get Started</a>
+    </div>
+  </header>
+
+  <section class="hero min-h-screen flex items-center justify-center md:py-20">
+    <div class="max-w-5xl mx-auto text-center px-4">
+      <div>
+        <h1 class="text-5xl md:text-6xl font-bold tracking-tight mb-4">Track. Analyze. Improve.</h1>
+        <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+          Student Performance Tracking and Automated Reporting Web Application
+        </p>
+        <a href="#signup" class="inline-block bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-blue-600 transition-colors">
+          Get Started
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section id="features" class="py-12 bg-white">
+      <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-8 text-center">Features</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="card p-6 hover:transform hover:translate-y-2 hover:transition-all duration-300 shadow-sm">
+            <h3 class="text-xl font-medium mb-3">Student Management</h3>
+            <p>Register students, import from Excel, track admission numbers and class assignments.</p>
+          </div>
+          <div class="card p-6 hover:transform hover:translate-y-2 hover:transition-all duration-300 shadow-sm">
+            <h3 class="text-xl font-medium mb-3">Marks Entry</h3>
+            <p>Enter marks for subjects; automatic grade calculation using KCSE scale.</p>
+          </div>
+          <div class="card p-6 hover:transform hover:translate-y-2 hover:transition-all duration-300 shadow-sm">
+            <h3 class="text-xl font-medium mb-3">Performance Analytics</h3>
+            <p>Compare subject averages, identify weakest subjects, calculate pass rates.</p>
+          </div>
+          <div class="card p-6 hover:transform hover:translate-y-2 hover:transition-all duration-300 shadow-sm">
+            <h3 class="text-xl font-medium mb-3">Automated Reporting</h3>
+            <p>Generate individual report cards, class rankings, subject analysis as PDF/Excel.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="dashboard" class="py-12 bg-gray-50">
+      <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-8 text-center">Dashboard</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="stat-panel">
+            <p class="text-3xl font-bold">247</p>
+            <p class="text-gray-600 text-sm">Total Students</p>
+          </div>
+          <div class="stat-panel">
+            <p class="text-3xl font-bold">89.5%</p>
+            <p class="text-gray-600 text-sm">Class Average</p>
+          </div>
+          <div class="stat-panel">
+            <p class="text-3xl font-bold">12</p>
+            <p class="text-gray-600 text-sm">Subjects</p>
+          </div>
+          <div class="stat-panel">
+            <p class="text-3xl font-bold">4</p>
+            <p class="text-gray-600 text-sm">Top Performers</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-gray-800 text-white py-8">
+    <div class="container mx-auto px-4 text-center">
+      <p>Student Performance Tracker &copy; 2024</p>
+      <p class="text-gray-400">Built with Python, React, and SQLite</p>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
