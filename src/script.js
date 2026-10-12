@@ -19,5 +19,5 @@ document.addEventListener('DOMContentLoaded', function() {
       observer.disconnect();
     }
   });
-  if (document.querySelector('.stat')) observer.observe(document.querySelector('.stat'));
+  if (counters.length > 0) observer.observe(counters[0]);
 });
