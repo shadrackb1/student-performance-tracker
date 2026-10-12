@@ -1,1 +1,34 @@
+# Dependencies
+node_modules
+backend/.venv
+backend/__pycache__
+backend/*.pyc
+
+# Build outputs
+frontend/dist
+*.egg-info
+
+# Database
+*.db
+*.sqlite
+backend/data.db
+
+# Environment
+.env
+.env.local
+
+# Vercel
 .vercel
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
