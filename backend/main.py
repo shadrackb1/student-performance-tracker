@@ -7,7 +7,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api import router
+from routes import router
 from db import init_db
 from seed import seed
 
