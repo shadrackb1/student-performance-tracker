@@ -11,7 +11,7 @@ from api import router
 from db import init_db
 from seed import seed
 
-app = FastAPI(title="Student Performance Tracker API", version="1.0.0")
+app = FastAPI(title="Chokur System API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,

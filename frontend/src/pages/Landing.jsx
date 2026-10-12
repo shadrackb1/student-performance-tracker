@@ -5,7 +5,7 @@ export default function Landing() {
     <div className="min-h-screen">
       <header className="bg-white border-b border-slate-200">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
-          <Link to="/dashboard" className="text-2xl font-semibold text-primary">Student Performance Tracker</Link>
+          <Link to="/dashboard" className="text-2xl font-semibold text-primary">Chokur System</Link>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="#features" className="text-slate-600 hover:text-primary">Features</Link>
             <Link to="#dashboard" className="text-slate-600 hover:text-primary">Dashboard</Link>
@@ -73,7 +73,7 @@ export default function Landing() {
 
       <footer className="bg-slate-800 text-white py-8">
         <div className="container mx-auto px-4 text-center">
-          <p>Student Performance Tracker &copy; 2024</p>
+          <p>Chokur System &copy; 2024</p>
           <p className="text-slate-400">Built with React, FastAPI, and SQLite</p>
         </div>
       </footer>

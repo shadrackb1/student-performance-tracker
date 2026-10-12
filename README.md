@@ -1,4 +1,4 @@
-# Student Performance Tracker
+# Chokur System
 
 MVP web application for tracking student performance, calculating grades, and generating automated reports.
 

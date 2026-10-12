@@ -72,7 +72,7 @@ def report_card_pdf(report: dict) -> bytes:
                             title=f"Report Card - {report['student']['name']}")
     student = report["student"]
     story = [
-        Paragraph("Student Performance Tracker", TITLE),
+        Paragraph("Chokur System", TITLE),
         Paragraph("Termly Report Card", BODY),
         Spacer(1, 6 * mm),
         Paragraph(
