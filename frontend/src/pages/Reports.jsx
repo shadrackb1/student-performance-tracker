@@ -1,49 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api, downloadBlob } from '../api';
 
 export default function Reports() {
   const [students, setStudents] = useState([]);
-  const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({ class_name: 'Form 1', term: 'Term 1', year: 2025, student_id: '' });
+  const [className, setClassName] = useState('Form 1');
+  const [term, setTerm] = useState('Term 1');
+  const [year, setYear] = useState(2025);
+  const [studentId, setStudentId] = useState('');
   const [report, setReport] = useState(null);
   const [downloading, setDownloading] = useState('');
 
-  useEffect(() => loadMeta(), []);
-
-  async function loadMeta() {
-    try {
-      const [st, cls] = await Promise.all([
-        api.students.list('Form 1'),
-        api.dashboard(null, 'Term 1', 2025).then(d => Array.from(new Set(Object.values(d.top_performers_list || []).map(s => s.class_name)))).catch(() => ['Form 1', 'Form 2', 'Form 3', 'Form 4']),
-      ]);
-      setStudents(st);
-      setClasses(['Form 1', 'Form 2', 'Form 3', 'Form 4']);
-    } catch (e) { console.error(e); }
-  }
-
   useEffect(() => {
-    if (filters.class_name) {
-      api.students.list(filters.class_name).then(setStudents).catch(console.error);
+    if (className) {
+      api.students.list(className).then(setStudents).catch(console.error);
     }
-  }, [filters.class_name]);
+  }, [className]);
 
   async function loadReport() {
-    if (!filters.student_id) return;
+    if (!studentId) return;
     setLoading(true);
     try {
-      const r = await api.reports.studentJson(filters.student_id, filters.term, filters.year);
-      setReport(r);
+      setReport(await api.reports.studentJson(studentId, term, year));
     } catch (e) { alert(e.message); }
     finally { setLoading(false); }
   }
 
   async function downloadPdf() {
-    if (!filters.student_id) return;
+    if (!studentId) return;
     setDownloading('pdf');
     try {
-      const blob = await api.reports.studentPdf(filters.student_id, filters.term, filters.year);
-      downloadBlob(blob, `report-${filters.student_id}-${filters.term}-${filters.year}.pdf`);
+      const blob = await api.reports.studentPdf(studentId, term, year);
+      downloadBlob(blob, `report-${studentId}-${term}-${year}.pdf`);
     } catch (e) { alert(e.message); }
     finally { setDownloading(''); }
   }
@@ -51,8 +39,8 @@ export default function Reports() {
   async function downloadRanking() {
     setDownloading('rank');
     try {
-      const blob = await api.reports.classRankingXlsx(filters.class_name, filters.term, filters.year);
-      downloadBlob(blob, `class-ranking-${filters.class_name}-${filters.term}-${filters.year}.xlsx`);
+      const blob = await api.reports.classRankingXlsx(className, term, year);
+      downloadBlob(blob, `class-ranking-${className}-${term}-${year}.xlsx`);
     } catch (e) { alert(e.message); }
     finally { setDownloading(''); }
   }
@@ -60,8 +48,8 @@ export default function Reports() {
   async function downloadSubjectAnalysis() {
     setDownloading('subj');
     try {
-      const blob = await api.reports.subjectAnalysisXlsx(filters.term, filters.year, filters.class_name || null);
-      downloadBlob(blob, `subject-analysis-${filters.term}-${filters.year}.xlsx`);
+      const blob = await api.reports.subjectAnalysisXlsx(term, year, className || null);
+      downloadBlob(blob, `subject-analysis-${term}-${year}.xlsx`);
     } catch (e) { alert(e.message); }
     finally { setDownloading(''); }
   }
@@ -74,25 +62,25 @@ export default function Reports() {
         <div className="bg-white rounded-xl border border-slate-200 p-6">
           <h3 className="text-lg font-semibold mb-4">Individual Report Card</h3>
           <div className="space-y-4">
-            <select className="w-full border border-slate-300 rounded-lg px-3 py-2" value={filters.class_name} onChange={e => setFilters(f => ({ ...f, class_name: e.target.value, student_id: '' }))}>
+            <select className="w-full border border-slate-300 rounded-lg px-3 py-2" value={className} onChange={e => { setClassName(e.target.value); setStudentId(''); setReport(null); }}>
               {['Form 1', 'Form 2', 'Form 3', 'Form 4'].map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select className="w-full border border-slate-300 rounded-lg px-3 py-2" value={filters.student_id} onChange={e => setFilters(f => ({ ...f, student_id: e.target.value }))}>
+            <select className="w-full border border-slate-300 rounded-lg px-3 py-2" value={studentId} onChange={e => { setStudentId(e.target.value); setReport(null); }}>
               <option value="">Select Student</option>
               {students.map(s => <option key={s.id} value={s.id}>{s.name} ({s.admission_no})</option>)}
             </select>
             <div className="grid grid-cols-2 gap-4">
-              <select className="border border-slate-300 rounded-lg px-3 py-2" value={filters.term} onChange={e => setFilters(f => ({ ...f, term: e.target.value }))}>
+              <select className="border border-slate-300 rounded-lg px-3 py-2" value={term} onChange={e => setTerm(e.target.value)}>
                 <option value="Term 1">Term 1</option>
                 <option value="Term 2">Term 2</option>
                 <option value="Term 3">Term 3</option>
               </select>
-              <select className="border border-slate-300 rounded-lg px-3 py-2" value={filters.year} onChange={e => setFilters(f => ({ ...f, year: parseInt(e.target.value) }))}>
+              <select className="border border-slate-300 rounded-lg px-3 py-2" value={year} onChange={e => setYear(parseInt(e.target.value))}>
                 <option value="2025">2025</option>
                 <option value="2024">2024</option>
               </select>
             </div>
-            <button className="btn btn-primary w-full" onClick={loadReport} disabled={!filters.student_id || loading}>
+            <button className="btn btn-primary w-full" onClick={loadReport} disabled={!studentId || loading}>
               {loading ? 'Loading…' : 'Generate Report'}
             </button>
           </div>
@@ -101,20 +89,20 @@ export default function Reports() {
         <div className="bg-white rounded-xl border border-slate-200 p-6">
           <h3 className="text-lg font-semibold mb-4">Bulk Exports</h3>
           <div className="space-y-3">
+            <select className="w-full border border-slate-300 rounded-lg px-3 py-2" value={className} onChange={e => setClassName(e.target.value)}>
+              {['Form 1', 'Form 2', 'Form 3', 'Form 4'].map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
             <div className="grid grid-cols-2 gap-4">
-              <select className="border border-slate-300 rounded-lg px-3 py-2" value={filters.class_name} onChange={e => setFilters(f => ({ ...f, class_name: e.target.value }))}>
-                {['Form 1', 'Form 2', 'Form 3', 'Form 4'].map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <select className="border border-slate-300 rounded-lg px-3 py-2" value={filters.term} onChange={e => setFilters(f => ({ ...f, term: e.target.value }))}>
+              <select className="border border-slate-300 rounded-lg px-3 py-2" value={term} onChange={e => setTerm(e.target.value)}>
                 <option value="Term 1">Term 1</option>
                 <option value="Term 2">Term 2</option>
                 <option value="Term 3">Term 3</option>
               </select>
+              <select className="border border-slate-300 rounded-lg px-3 py-2" value={year} onChange={e => setYear(parseInt(e.target.value))}>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+              </select>
             </div>
-            <select className="border border-slate-300 rounded-lg px-3 py-2" value={filters.year} onChange={e => setFilters(f => ({ ...f, year: parseInt(e.target.value) }))}>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-            </select>
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button className="btn border border-slate-300 text-slate-700 hover:bg-slate-50" onClick={downloadRanking} disabled={downloading === 'rank'}>
                 {downloading === 'rank' ? '⏳' : '📥'} Class Ranking (XLSX)
@@ -134,11 +122,9 @@ export default function Reports() {
               <h2 className="text-2xl font-bold">{report.student.name}</h2>
               <p className="text-slate-600">{report.student.admission_no} • {report.student.class_name} • {report.term} {report.year}</p>
             </div>
-            <div className="flex gap-3">
-              <button className="btn btn-primary" onClick={downloadPdf} disabled={downloading === 'pdf'}>
-                {downloading === 'pdf' ? '⏳' : '📥'} Download PDF
-              </button>
-            </div>
+            <button className="btn btn-primary" onClick={downloadPdf} disabled={downloading === 'pdf'}>
+              {downloading === 'pdf' ? '⏳' : '📥'} Download PDF
+            </button>
           </div>
 
           <div className="p-6">
@@ -159,7 +145,7 @@ export default function Reports() {
                       <td className="p-3">{s.subject}</td>
                       <td className="p-3 font-mono text-slate-500">{s.code}</td>
                       <td className="p-3 text-right font-bold">{s.score}</td>
-                      <td className="p-3"><span className="px-2 py-1 rounded-full text-xs bg-primary-light text-primary">{s.grade}</span></td>
+                      <td className="p-3"><span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">{s.grade}</span></td>
                       <td className="p-3 text-right">{s.points}</td>
                     </tr>
                   ))}
@@ -172,7 +158,7 @@ export default function Reports() {
               <SummaryCard label="Average" value={`${report.average}%`} />
               <SummaryCard label="Mean Grade" value={report.mean_grade} />
               <SummaryCard label="Class Rank" value={`${report.rank} / ${report.class_size}`} />
-              <SummaryCard label="Status" value={report.passed ? 'PASS (C+ and above)' : 'BELOW C+'} color={report.passed ? 'success' : 'danger'} />
+              <SummaryCard label="Status" value={report.passed ? 'PASS (C+ and above)' : 'BELOW C+'} color={report.passed ? 'green' : 'red'} />
             </div>
           </div>
         </div>
@@ -181,9 +167,9 @@ export default function Reports() {
   );
 }
 
-function SummaryCard({ label, value, color = 'primary' }) {
+function SummaryCard({ label, value, color = 'blue' }) {
   return (
-    <div className={`bg-${color}-50 border border-${color}-200 rounded-xl p-4`}>
+    <div className={`rounded-xl p-4 border ${color === 'green' ? 'bg-green-50 border-green-200' : color === 'red' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
       <p className="text-sm text-slate-500">{label}</p>
       <p className="text-2xl font-bold text-slate-900">{value}</p>
     </div>
