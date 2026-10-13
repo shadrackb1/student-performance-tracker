@@ -54,9 +54,9 @@ export default function Layout() {
           <div className="flex items-center justify-between h-16 px-4 border-b border-subtle">
             <NavLink to="/dashboard" className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 bg-accent-primary rounded-standard flex items-center justify-center shrink-0">
-                <span className="text-primary font-semibold text-caption">SPT</span>
+                <span className="text-primary font-semibold text-caption">CS</span>
               </div>
-              <span className="font-semibold text-primary text-body-sm truncate">Student Tracker</span>
+              <span className="font-semibold text-primary text-body-sm truncate">Chokur System</span>
             </NavLink>
             <button
               className="lg:hidden text-tertiary hover:text-primary hover:bg-hover p-1.5 rounded-standard transition-colors"

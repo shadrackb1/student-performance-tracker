@@ -6,7 +6,7 @@ import { api } from '../../services/api'
 const STEPS = [
   {
     id: 'welcome',
-    title: 'Welcome to Student Performance Tracker',
+    title: 'Welcome to Chokur System',
     subtitle: 'Track. Analyze. Improve.',
     illustration: '📊',
     action: null,

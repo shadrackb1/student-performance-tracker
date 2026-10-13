@@ -205,7 +205,7 @@ export default function Landing() {
             transition={{ delay: 0.1 }}
             className="text-body-lg text-accent-interactive/80 mb-8 max-w-2xl mx-auto"
           >
-            Join educators who are already using Student Performance Tracker to save time,
+            Join educators who are already using Chokur System to save time,
             improve accuracy, and gain insights into student performance.
           </motion.p>
           <motion.div
@@ -223,7 +223,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="bg-deep border-t border-subtle py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-tertiary mb-2">Student Performance Tracker &copy; 2024</p>
+          <p className="text-tertiary mb-2">Chokur System &copy; 2026</p>
           <p className="text-sm text-quaternary">Built with FastAPI, React, and SQLite/PostgreSQL</p>
         </div>
       </footer>

@@ -19,7 +19,7 @@ export default function DesignSystemShowcase() {
             Design System
           </h1>
           <p className="text-body-lg text-tertiary max-w-2xl mx-auto">
-            Student Performance Tracker — Built on Linear, Vercel & Stripe design principles
+            Chokur System — Built on Linear, Vercel & Stripe design principles
           </p>
         </div>
 

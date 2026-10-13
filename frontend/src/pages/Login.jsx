@@ -84,9 +84,9 @@ export default function Login({ register }) {
         <div className="text-center">
           <Link to="/" className="inline-flex items-center gap-2 mb-8">
             <div className="w-10 h-10 bg-accent-primary rounded-comfortable flex items-center justify-center">
-              <span className="text-primary font-bold">SPT</span>
+              <span className="text-primary font-bold">CS</span>
             </div>
-            <span className="text-h3 font-linear text-primary">Student Tracker</span>
+            <span className="text-h3 font-linear text-primary">Chokur System</span>
           </Link>
           <motion.h2
             initial={{ opacity: 0, y: 10 }}
