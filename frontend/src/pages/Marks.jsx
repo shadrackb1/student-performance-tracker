@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
+import { gradeFor } from '../storage';
+
+const CLASSES = ['Form 1', 'Form 2', 'Form 3', 'Form 4'];
 
 export default function Marks() {
   const [matrix, setMatrix] = useState({ students: [], subjects: [], marks: {} });
@@ -9,6 +12,7 @@ export default function Marks() {
   const [term, setTerm] = useState('Term 1');
   const [year, setYear] = useState(2025);
   const [edited, setEdited] = useState({});
+  const [saved, setSaved] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -35,6 +39,8 @@ export default function Marks() {
     try {
       await api.marks.bulk({ class_name: className, term, year, entries });
       setEdited({});
+      setSaved(`✓ ${entries.length} marks saved`);
+      setTimeout(() => setSaved(''), 3000);
       load();
     } catch (e) { alert(e.message); }
     finally { setSaving(false); }
@@ -45,57 +51,83 @@ export default function Marks() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold">Marks Entry</h1>
-        <div className="flex items-center gap-4 flex-wrap">
-          <select className="border border-slate-300 rounded-lg px-3 py-2" value={className} onChange={e => setClassName(e.target.value)}>
-            {['Form 1', 'Form 2', 'Form 3', 'Form 4'].map(c => <option key={c} value={c}>{c}</option>)}
+        <div>
+          <h1 className="text-h1 text-primary">Marks Entry</h1>
+          <p className="text-caption text-tertiary mt-1">{className} · {term}, {year} · scores 0–100, graded automatically</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <select className="input w-auto" value={className} onChange={e => setClassName(e.target.value)} aria-label="Class">
+            {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-          <select className="border border-slate-300 rounded-lg px-3 py-2" value={term} onChange={e => setTerm(e.target.value)}>
-            <option value="Term 1">Term 1</option>
-            <option value="Term 2">Term 2</option>
-            <option value="Term 3">Term 3</option>
+          <select className="input w-auto" value={term} onChange={e => setTerm(e.target.value)} aria-label="Term">
+            {['Term 1', 'Term 2', 'Term 3'].map(t => <option key={t} value={t}>{t}</option>)}
           </select>
-          <select className="border border-slate-300 rounded-lg px-3 py-2" value={year} onChange={e => setYear(parseInt(e.target.value))}>
-            <option value="2025">2025</option>
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
+          <select className="input w-auto" value={year} onChange={e => setYear(parseInt(e.target.value))} aria-label="Year">
+            {[2025, 2024, 2023].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <button className="btn btn-primary" onClick={saveAll} disabled={saving || !Object.keys(edited).length}>
-            {saving ? 'Saving…' : `Save (${Object.keys(edited).length})`}
+            {saving ? <span className="loading-spinner-sm" /> : null}
+            {saving ? 'Saving…' : `Save ${Object.keys(edited).length || ''}`}
           </button>
         </div>
       </div>
 
+      {saved && <p className="text-caption text-success" role="status">{saved}</p>}
+
       {loading ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">Loading marks…</div>
+        <div className="card flex items-center justify-center py-16">
+          <span className="loading-spinner-lg" role="status" aria-label="Loading" />
+        </div>
+      ) : matrix.students.length === 0 ? (
+        <div className="empty-state card">
+          <div className="empty-icon">📝</div>
+          <p className="!text-primary font-medium">No students in {className}</p>
+          <p>Add students first, then enter their marks here.</p>
+        </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="table-container">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="table">
               <thead>
-                <tr className="text-left text-slate-500 border-b bg-slate-50">
-                  <th className="p-3 sticky left-0 bg-slate-50 z-10">Student</th>
-                  <th className="p-3">Adm. No</th>
+                <tr>
+                  <th className="sticky left-0 z-10 bg-panel">Student</th>
+                  <th>Adm. No</th>
                   {matrix.subjects.map(sub => (
-                    <th key={sub.id} className="p-3 min-w-[80px] text-center">{sub.name}<br/><span className="text-xs text-slate-400">{sub.code}</span></th>
+                    <th key={sub.id} className="min-w-[84px] text-center">
+                      {sub.name}
+                      <span className="block text-tiny text-quaternary font-mono normal-case tracking-normal">{sub.code}</span>
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {matrix.students.map(stu => (
-                  <tr key={stu.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="p-3 sticky left-0 bg-white z-10 font-medium">{stu.name}</td>
-                    <td className="p-3 font-mono text-slate-500">{stu.admission_no}</td>
-                    {matrix.subjects.map(sub => (
-                      <td key={sub.id} className="p-2 text-center">
-                        <input
-                          type="number" min="0" max="100" step="0.1"
-                          className="w-full px-2 py-1 text-center border border-slate-300 rounded focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700"
-                          value={getScore(stu.id, String(sub.id))}
-                          onChange={e => handleChange(stu.id, String(sub.id), e.target.value)}
-                        />
-                      </td>
-                    ))}
+                  <tr key={stu.id}>
+                    <td className="sticky left-0 z-10 bg-panel !text-primary font-medium">{stu.name}</td>
+                    <td className="num !text-tertiary">{stu.admission_no}</td>
+                    {matrix.subjects.map(sub => {
+                      const score = getScore(stu.id, String(sub.id));
+                      const isEdited = edited[`${stu.id}-${sub.id}`] !== undefined;
+                      return (
+                        <td key={sub.id} className="p-1.5 text-center">
+                          <input
+                            type="number" min="0" max="100" step="0.1"
+                            className={`w-16 px-1.5 py-1 text-center bg-surface text-primary text-body-sm rounded-standard border transition-colors duration-150 focus:outline-none ${
+                              isEdited ? 'border-accent-interactive' : 'border-standard hover:border-strong'
+                            } focus:border-accent-interactive`}
+                            style={{ boxShadow: isEdited ? '0 0 0 2px rgba(113, 112, 255, 0.15)' : undefined }}
+                            value={score}
+                            onChange={e => handleChange(stu.id, String(sub.id), e.target.value)}
+                            aria-label={`${stu.name} — ${sub.name}`}
+                          />
+                          {score !== '' && score != null && (
+                            <span className={`block text-tiny mt-0.5 font-mono ${isEdited ? 'text-accent-interactive' : 'text-quaternary'}`}>
+                              {gradeFor(parseFloat(score))}
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>

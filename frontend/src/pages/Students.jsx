@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 
+const CLASSES = ['Form 1', 'Form 2', 'Form 3', 'Form 4'];
+
 export default function Students() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,6 +12,7 @@ export default function Students() {
   const [form, setForm] = useState({ admission_no: '', name: '', class_name: 'Form 1' });
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -24,6 +27,7 @@ export default function Students() {
   useEffect(() => {
     if (modal.editing) setForm(modal.editing);
     else setForm({ admission_no: '', name: '', class_name: 'Form 1' });
+    setFormError('');
   }, [modal]);
 
   async function submit(e) {
@@ -33,11 +37,11 @@ export default function Students() {
       else await api.students.create(form);
       setModal({ open: false, editing: null });
       load();
-    } catch (e) { alert(e.message); }
+    } catch (e) { setFormError(e.message); }
   }
 
   async function remove(id) {
-    if (!confirm('Delete this student?')) return;
+    if (!confirm('Delete this student and all their marks? This cannot be undone.')) return;
     await api.students.delete(id);
     load();
   }
@@ -55,62 +59,88 @@ export default function Students() {
       } else {
         parts.push(`Imported: ${res.inserted}, Updated: ${res.updated}`);
       }
-      alert(parts.join(' | '));
+      setFormError('');
       setImportFile(null);
       load();
-    } catch (e) { alert(e.message); }
+      // Non-blocking result surfaced near the import bar
+      setFormError(`✓ ${parts.join(' · ')}`);
+    } catch (e) { setFormError(e.message); }
     finally { setImporting(false); }
   }
-
-  const classes = ['Form 1', 'Form 2', 'Form 3', 'Form 4'];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold">Students</h1>
+        <div>
+          <h1 className="text-h1 text-primary">Students</h1>
+          <p className="text-caption text-tertiary mt-1">{students.length} enrolled{className ? ` in ${className}` : ''}</p>
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <select className="border border-slate-300 rounded-lg px-3 py-2" value={className} onChange={e => setClassName(e.target.value)}>
+          <select className="input w-auto" value={className} onChange={e => setClassName(e.target.value)} aria-label="Filter by class">
             <option value="">All Classes</option>
-            {classes.map(c => <option key={c} value={c}>{c}</option>)}
+            {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-          <input className="border border-slate-300 rounded-lg px-3 py-2 w-64" placeholder="Search name/admission…" value={query} onChange={e => setQuery(e.target.value)} />
+          <input
+            className="input w-56"
+            placeholder="Search name or admission no…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            aria-label="Search students"
+          />
           <button className="btn btn-primary" onClick={() => setModal({ open: true, editing: null })}>+ Add Student</button>
         </div>
       </div>
 
-      <form onSubmit={handleImport} className="bg-white rounded-xl border border-slate-200 p-4">
-        <div className="flex items-center gap-4 flex-wrap">
-          <label className="btn btn-primary cursor-pointer">
-            Import CSV/Excel <input type="file" accept=".csv,.xlsx" className="hidden" onChange={e => setImportFile(e.target.files[0])} />
-          </label>
-          <button type="submit" className="btn btn-primary" disabled={!importFile || importing}>{importing ? 'Importing…' : 'Import'}</button>
-          <span className="text-sm text-slate-500">Columns: admission_no, name, class_name</span>
-        </div>
+      {/* Import bar */}
+      <form onSubmit={handleImport} className="card p-4 flex items-center gap-3 flex-wrap">
+        <label className="btn btn-secondary cursor-pointer">
+          Choose CSV/Excel
+          <input type="file" accept=".csv,.xlsx" className="hidden" onChange={e => setImportFile(e.target.files[0])} />
+        </label>
+        <button type="submit" className="btn btn-primary" disabled={!importFile || importing}>
+          {importing ? <span className="loading-spinner-sm" /> : null}
+          {importing ? 'Importing…' : 'Import'}
+        </button>
+        <span className="text-caption text-quaternary">Columns: admission_no, name, class_name</span>
+        {importFile && <span className="badge">{importFile.name}</span>}
       </form>
+      {formError && (
+        <p className={`text-caption ${formError.startsWith('✓') ? 'text-success' : 'text-danger'}`} role="status">{formError}</p>
+      )}
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      {/* Table */}
+      <div className="table-container">
         {loading ? (
-          <div className="p-8 text-center">Loading…</div>
+          <div className="flex items-center justify-center py-16">
+            <span className="loading-spinner-lg" role="status" aria-label="Loading" />
+          </div>
+        ) : students.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">👥</div>
+            <p className="!text-primary font-medium">No students yet</p>
+            <p>Add students manually or import a CSV to get started.</p>
+            <button className="btn btn-primary" onClick={() => setModal({ open: true, editing: null })}>+ Add Student</button>
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="table">
               <thead>
-                <tr className="text-left text-slate-500 border-b bg-slate-50">
-                  <th className="p-3">Admission No</th>
-                  <th className="p-3">Name</th>
-                  <th className="p-3">Class</th>
-                  <th className="p-3">Actions</th>
+                <tr>
+                  <th>Admission No</th>
+                  <th>Name</th>
+                  <th>Class</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {students.map(s => (
-                  <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="p-3 font-mono">{s.admission_no}</td>
-                    <td className="p-3">{s.name}</td>
-                    <td className="p-3"><span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">{s.class_name}</span></td>
-                    <td className="p-3">
-                      <button className="text-blue-700 hover:underline mr-3" onClick={() => setModal({ open: true, editing: s })}>Edit</button>
-                      <button className="text-red-600 hover:underline" onClick={() => remove(s.id)}>Delete</button>
+                  <tr key={s.id}>
+                    <td className="num !text-tertiary">{s.admission_no}</td>
+                    <td className="!text-primary font-medium">{s.name}</td>
+                    <td><span className="badge">{s.class_name}</span></td>
+                    <td className="text-right">
+                      <button className="text-accent hover:underline mr-4 text-body-sm" onClick={() => setModal({ open: true, editing: s })}>Edit</button>
+                      <button className="text-danger hover:underline text-body-sm" onClick={() => remove(s.id)}>Delete</button>
                     </td>
                   </tr>
                 ))}
@@ -120,29 +150,45 @@ export default function Students() {
         )}
       </div>
 
+      {/* Modal */}
       {modal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setModal({ open: false })}>
-          <form onSubmit={submit} className="bg-white rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-semibold mb-4">{modal.editing ? 'Edit' : 'Add'} Student</h3>
-            <div className="space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setModal({ open: false })}>
+          <form
+            onSubmit={submit}
+            className="card w-full max-w-md shadow-dialog !bg-surface"
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={modal.editing ? 'Edit student' : 'Add student'}
+          >
+            <div className="card-header flex items-center justify-between">
+              <h3 className="text-h3 text-primary">{modal.editing ? 'Edit Student' : 'Add Student'}</h3>
+              <button type="button" className="text-tertiary hover:text-primary p-1" onClick={() => setModal({ open: false })} aria-label="Close">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="card-body space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Admission No</label>
-                <input className="w-full border border-slate-300 rounded-lg px-3 py-2" value={form.admission_no} onChange={e => setForm(f => ({ ...f, admission_no: e.target.value }))} required />
+                <label className="label" htmlFor="adm">Admission No</label>
+                <input id="adm" className="input" value={form.admission_no} onChange={e => setForm(f => ({ ...f, admission_no: e.target.value }))} required />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <input className="w-full border border-slate-300 rounded-lg px-3 py-2" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+                <label className="label" htmlFor="name">Full Name</label>
+                <input id="name" className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Class</label>
-                <select className="w-full border border-slate-300 rounded-lg px-3 py-2" value={form.class_name} onChange={e => setForm(f => ({ ...f, class_name: e.target.value }))}>
-                  {classes.map(c => <option key={c} value={c}>{c}</option>)}
+                <label className="label" htmlFor="cls">Class</label>
+                <select id="cls" className="input" value={form.class_name} onChange={e => setForm(f => ({ ...f, class_name: e.target.value }))}>
+                  {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
+              {formError && !formError.startsWith('✓') && <p className="text-caption text-danger">{formError}</p>}
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button type="button" className="btn border border-slate-300 text-slate-700 hover:bg-slate-50" onClick={() => setModal({ open: false })}>Cancel</button>
-              <button type="submit" className="btn btn-primary">{modal.editing ? 'Save' : 'Create'}</button>
+            <div className="px-6 py-4 border-t border-subtle flex justify-end gap-3">
+              <button type="button" className="btn btn-secondary" onClick={() => setModal({ open: false })}>Cancel</button>
+              <button type="submit" className="btn btn-primary">{modal.editing ? 'Save Changes' : 'Create Student'}</button>
             </div>
           </form>
         </div>

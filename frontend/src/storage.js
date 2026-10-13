@@ -6,6 +6,7 @@ const KEYS = {
   subjects: 'chokur_subjects',
   marks: 'chokur_marks',
   meta: 'chokur_meta',
+  classes: 'chokur_classes',
 };
 
 function read(key, fallback) {
@@ -39,6 +40,21 @@ export function initStore() {
   }
   if (!read(KEYS.students, null)) write(KEYS.students, []);
   if (!read(KEYS.marks, null)) write(KEYS.marks, []);
+  if (!read(KEYS.classes, null)) write(KEYS.classes, []);
+}
+
+// ---------- classes ----------
+export function getClasses() {
+  return read(KEYS.classes, []);
+}
+
+export function createClass(data) {
+  const list = read(KEYS.classes, []);
+  const id = Math.max(0, ...list.map(c => c.id)) + 1;
+  const cls = { id, ...data, created_at: new Date().toISOString() };
+  list.push(cls);
+  write(KEYS.classes, list);
+  return cls;
 }
 
 // ---------- students ----------

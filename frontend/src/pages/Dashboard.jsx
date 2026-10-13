@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 
+const CLASSES = ['Form 1', 'Form 2', 'Form 3', 'Form 4'];
+
+function Select({ value, onChange, children, ...props }) {
+  return (
+    <select className="input w-auto" value={value} onChange={onChange} {...props}>
+      {children}
+    </select>
+  );
+}
+
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,110 +28,138 @@ export default function Dashboard() {
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <div className="flex h-64 items-center justify-center">Loading…</div>;
-  if (!data) return <div className="text-red-600">Failed to load dashboard</div>;
+  if (loading && !data) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <span className="loading-spinner-lg" role="status" aria-label="Loading" />
+      </div>
+    );
+  }
+  if (!data) {
+    return (
+      <div className="empty-state card">
+        <div className="empty-icon">⚠️</div>
+        <p>Failed to load dashboard. Check your connection and try again.</p>
+        <button className="btn btn-primary" onClick={load}>Retry</button>
+      </div>
+    );
+  }
 
   const stats = [
     { label: 'Total Students', value: data.students, icon: '👥' },
     { label: 'Subjects', value: data.subjects, icon: '📚' },
     { label: 'Classes', value: data.classes, icon: '🏫' },
-    { label: 'Entries', value: data.entries, icon: '📝' },
+    { label: 'Mark Entries', value: data.entries, icon: '📝' },
   ];
 
+  const distMax = Math.max(1, ...Object.values(data.grade_distribution || {}));
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
+      {/* Header + filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-        <div className="flex items-center gap-4 flex-wrap">
-          <select className="border border-slate-300 rounded-lg px-3 py-2" value={className} onChange={e => setClassName(e.target.value)}>
+        <div>
+          <h1 className="text-h1 text-primary">Dashboard</h1>
+          <p className="text-caption text-tertiary mt-1">{term}, {year} — {className || 'All classes'}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={className} onChange={e => setClassName(e.target.value)} aria-label="Class">
             <option value="">All Classes</option>
-            {['Form 1', 'Form 2', 'Form 3', 'Form 4'].map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select className="border border-slate-300 rounded-lg px-3 py-2" value={term} onChange={e => setTerm(e.target.value)}>
-            <option value="Term 1">Term 1</option>
-            <option value="Term 2">Term 2</option>
-            <option value="Term 3">Term 3</option>
-          </select>
-          <select className="border border-slate-300 rounded-lg px-3 py-2" value={year} onChange={e => setYear(parseInt(e.target.value))}>
-            <option value="2025">2025</option>
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
-          </select>
+            {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+          </Select>
+          <Select value={term} onChange={e => setTerm(e.target.value)} aria-label="Term">
+            {['Term 1', 'Term 2', 'Term 3'].map(t => <option key={t} value={t}>{t}</option>)}
+          </Select>
+          <Select value={year} onChange={e => setYear(parseInt(e.target.value))} aria-label="Year">
+            {[2025, 2024, 2023].map(y => <option key={y} value={y}>{y}</option>)}
+          </Select>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Key metrics — value is the hero, label de-emphasized */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map(s => (
-          <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-blue-100 text-2xl">{s.icon}</div>
-              <div>
-                <p className="text-sm text-slate-500">{s.label}</p>
-                <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-              </div>
-            </div>
+          <div key={s.label} className="card p-5">
+            <p className="text-label text-tertiary uppercase tracking-wider">{s.label}</p>
+            <p className="text-display text-primary mt-2">{s.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Overview</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between"><span>Class Average</span><span className="font-bold">{data.average}%</span></div>
-            <div className="flex justify-between"><span>Pass Rate</span><span className="font-bold">{data.pass_rate}%</span></div>
-            <div className="flex justify-between"><span>Mean Grade</span><span className="font-bold">{data.mean_grade}</span></div>
-            <div className="flex justify-between"><span>Top Performers (80%+)</span><span className="font-bold">{data.top_performers}</span></div>
-            <div className="flex justify-between"><span>Strongest Subject</span><span className="font-bold">{data.strongest_subject?.name || '—'}</span></div>
-            <div className="flex justify-between"><span>Weakest Subject</span><span className="font-bold">{data.weakest_subject?.name || '—'}</span></div>
+      {/* Mean grade strip — the single most important metric gets emphasis */}
+      <div className="card p-6 flex flex-col sm:flex-row sm:items-center gap-6 justify-between">
+        <div className="flex items-center gap-5">
+          <span className={`grade-badge grade-${data.mean_grade === '-' ? 'E' : data.mean_grade.replace('+', 'plus').replace('-', 'minus')} !text-h1 !px-3 !py-2`}>
+            {data.mean_grade}
+          </span>
+          <div>
+            <p className="text-body text-primary font-medium">Mean Grade</p>
+            <p className="text-caption text-tertiary">{data.average}% average · {data.pass_rate}% pass rate</p>
           </div>
         </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Grade Distribution</h3>
-          <div className="space-y-2">
-            {Object.entries(data.grade_distribution || {}).map(([grade, count]) => (
-              <div key={grade} className="flex items-center gap-3">
-                <span className="w-12 font-mono text-sm">{grade}</span>
-                <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-700 rounded-full" style={{ width: `${(count / (data.entries || 1)) * 100}%` }} />
-                </div>
-                <span className="w-10 text-right text-sm">{count}</span>
-              </div>
-            ))}
+        <div className="flex gap-8">
+          <div>
+            <p className="text-micro text-tertiary uppercase tracking-wider">Strongest</p>
+            <p className="text-body text-primary font-medium mt-1">{data.strongest_subject?.name || '—'}</p>
+            <p className="text-caption text-success">{data.strongest_subject ? `${data.strongest_subject.avg}%` : ''}</p>
+          </div>
+          <div>
+            <p className="text-micro text-tertiary uppercase tracking-wider">Weakest</p>
+            <p className="text-body text-primary font-medium mt-1">{data.weakest_subject?.name || '—'}</p>
+            <p className="text-caption text-warning">{data.weakest_subject ? `${data.weakest_subject.avg}%` : ''}</p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold mb-4">Top Performers</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-200">
-                <th className="pb-2">Rank</th>
-                <th className="pb-2">Name</th>
-                <th className="pb-2">Adm. No</th>
-                <th className="pb-2">Class</th>
-                <th className="pb-2">Average</th>
-                <th className="pb-2">Grade</th>
-                <th className="pb-2">Points</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data.top_performers_list || []).map((s, i) => (
-                <tr key={s.student_id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="py-2 font-bold">{i + 1}</td>
-                  <td className="py-2">{s.name}</td>
-                  <td className="py-2">{s.admission_no}</td>
-                  <td className="py-2">{s.class_name}</td>
-                  <td className="py-2">{s.average}%</td>
-                  <td className="py-2"><span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">{s.mean_grade}</span></td>
-                  <td className="py-2">{s.total_points}</td>
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Grade distribution — grayscale bars, count on the right */}
+        <div className="card p-6">
+          <h3 className="text-h3 text-primary mb-5">Grade Distribution</h3>
+          <div className="space-y-2.5">
+            {Object.entries(data.grade_distribution || {}).map(([grade, count]) => (
+              <div key={grade} className="flex items-center gap-3">
+                <span className={`grade-badge grade-${grade.replace('+', 'plus').replace('-', 'minus')} w-10`}>{grade}</span>
+                <div className="flex-1 h-1.5 bg-hover rounded-pill overflow-hidden">
+                  <div
+                    className="h-full rounded-pill bg-accent-primary transition-all duration-300"
+                    style={{ width: `${(count / distMax) * 100}%` }}
+                  />
+                </div>
+                <span className="w-8 text-right text-caption text-tertiary font-mono">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top performers table */}
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <h3 className="text-h3 text-primary">Top Performers</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Class</th>
+                  <th className="num">Average</th>
+                  <th>Grade</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(data.top_performers_list || []).map((s, i) => (
+                  <tr key={s.student_id}>
+                    <td className="num !text-tertiary">{i + 1}</td>
+                    <td className="!text-primary font-medium">{s.name}</td>
+                    <td className="!text-tertiary">{s.class_name}</td>
+                    <td className="num !text-primary font-semibold">{s.average}%</td>
+                    <td><span className={`grade-badge grade-${s.mean_grade.replace('+', 'plus').replace('-', 'minus')}`}>{s.mean_grade}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
